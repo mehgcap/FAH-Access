@@ -8,30 +8,37 @@ session = telnetlib.Telnet(host, port)
 queues = {}
 slots = {}
 
+def getPreparedResponse(session, command):
+	#sends the command to the Telnet session, reads the response, and strips all the extra data so the resulting PyON can be evaluated
+	session.write("{cmd}\n".format(cmd=command).encode("ascii"))
+	#this line will skip the PyON header
+	unnecessaryLines = session.read_until(b"\nPyON ")
+	#read the PyON message
+	lines = session.read_until(b"---\n").decode("ascii")
+	#we want to strip the first and last couple lines, so make an array by splitting on the return character
+	lineArray = lines.split("\n")
+	#strip the first line, and the last two lines, and join the whole thing with new lines so it can be evaluated
+	lines = "\n".join(lineArray[1:(len(lineArray)-2)])
+	return lines
+
 #get the slot info
-session.write("slot-info\n".encode("ascii"))
-#this line will skip the PyON header
-unnecessaryLines = session.read_until(b"\nPyON ")
-#read the PyON message
-slotLines = session.read_until(b"---\n").decode("ascii").split("\n")
-slotLines = "\n".join(slotLines[1:(len(slotLines)-2)])
+slotLines = getPreparedResponse(session, "slot-info")
 slotsData = eval(slotLines, {}, {})
+#add all the slots to our dictionary
 for slotData in slotsData:
 	slot = Slot(slotData)
 	slots[slot.id] = slot
 
-session.write("queue-info\n".encode("ascii"))
-#this line will skip the PyON header
-unnecessaryLines = session.read_until(b"\nPyON ")
-#read the PyON message
-queueLines = session.read_until(b"---\n").decode("ascii").split("\n")
-queueLines = "\n".join(queueLines[1:(len(queueLines)-2)])
+queueLines = getPreparedResponse(session, "queue-info")
 queuesData = eval(queueLines, {}, {})
 for queueData in queuesData:
 	queue = Queue(queueData)
 	queues[queue.id] = queue
 	slotID = queue.slot
 	slots[slotID].queues.append(queue)
+
+#get basic details
+
 
 #output the results
 for slot in slots.values():
