@@ -71,4 +71,5 @@ while menuChoice not in validChoices:
 	else:
 		print("{choice} is not a valid selection.".format(choice=menuChoice))
 
+print("Exiting...")
 session.close()
