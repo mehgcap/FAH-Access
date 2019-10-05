@@ -1,51 +1,74 @@
+from fah_session import FAHSession
+from menu import MenuItem
 from queue import Queue
 from slot import Slot
-import telnetlib
+from itertools import count
 
 host = "localhost"
 port = 36330
-session = telnetlib.Telnet(host, port)
-queues = {}
-slots = {}
+session = FAHSession(host, port)
 
-def getPreparedResponse(session, command):
-	#sends the command to the Telnet session, reads the response, and strips all the extra data so the resulting PyON can be evaluated
-	session.write("{cmd}\n".format(cmd=command).encode("ascii"))
-	#this line will skip the PyON header
-	unnecessaryLines = session.read_until(b"\nPyON ")
-	#read the PyON message
-	lines = session.read_until(b"---\n").decode("ascii")
-	#we want to strip the first and last couple lines, so make an array by splitting on the return character
-	lineArray = lines.split("\n")
-	#strip the first line, and the last two lines, and join the whole thing with new lines so it can be evaluated
-	lines = "\n".join(lineArray[1:(len(lineArray)-2)])
-	return lines
+def showSummary():
+	queues = {}
+	slots = {}
+	
+	#get the slot info
+	slotsData = session.getSlotInfo()
+	#add all the slots to our dictionary
+	for slotData in slotsData:
+		slot = Slot(slotData)
+		slots[slot.id] = slot
+	
+	#now the queue info
+	queuesData = session.getQueueInfo()
+	for queueData in queuesData:
+		queue = Queue(queueData)
+		queues[queue.id] = queue
+		#add this queue to it's parent slot's list of queues
+		slotID = queue.slot
+		slots[slotID].queues.append(queue)
+	
+	#get basic details
+	teamInfo = eval(session.getPreparedResponse("options user team"), {}, {})
+	
+	print("User {user} is folding for team {team}".format(user=teamInfo["user"], team=teamInfo["team"]))
+	for slot in slots.values():
+		print(slot.__str__())
+	for queue in queues.values():
+		print(queue.__str__())
 
-#get the slot info
-slotLines = getPreparedResponse(session, "slot-info")
-slotsData = eval(slotLines, {}, {})
-#add all the slots to our dictionary
-for slotData in slotsData:
-	slot = Slot(slotData)
-	slots[slot.id] = slot
+def close():
+	global session
+	session.close()
+	exit()
 
-queueLines = getPreparedResponse(session, "queue-info")
-queuesData = eval(queueLines, {}, {})
-for queueData in queuesData:
-	queue = Queue(queueData)
-	queues[queue.id] = queue
-	slotID = queue.slot
-	slots[slotID].queues.append(queue)
+def enterCommand():
+	global session
+	cmd = input("Enter a command to be sent directly to FAH:\n")
+	result = session.getPreparedResponse(cmd)
+	print(result)
 
-#get basic details
+counter = lambda c=count(): next(c) + 1
+menuItems = [
+	MenuItem(counter(), "Show summary", showSummary),
+	MenuItem(counter(), "Enter Command", enterCommand),
+	MenuItem(counter(), "Exit", close),
+]
 
-teamInfo = eval(getPreparedResponse(session, "options user team"), {}, {})
-
-#output the results
-print("User {user} is folding for team {team}".format(user=teamInfo["user"], team=teamInfo["team"]))
-for slot in slots.values():
-	print(slot.__str__() + "\n")
-for queue in queues.values():
-	print(queue.__str__() + "\n")
+menuChoice = -1
+validChoices = [item.number for item in menuItems]
+while menuChoice not in validChoices:
+	[print("{num}. {text}".format(num=item.number, text=item.text)) for item in menuItems]
+	try:
+		menuChoice = int(input("Choice: "))
+	except ValueError:
+		print("Invalid entry. Numbers only.")
+		continue
+	
+	if menuChoice in validChoices:
+		menuItems[menuChoice-1].run()
+		menuChoice = -1
+	else:
+		print("{choice} is not a valid selection.".format(choice=menuChoice))
 
 session.close()
