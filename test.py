@@ -38,7 +38,8 @@ for queueData in queuesData:
 	slots[slotID].queues.append(queue)
 
 #get basic details
-
+optionsData = getPreparedResponse(session, "options user team")
+print(optionsData)
 
 #output the results
 for slot in slots.values():
