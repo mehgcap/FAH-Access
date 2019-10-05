@@ -38,10 +38,11 @@ for queueData in queuesData:
 	slots[slotID].queues.append(queue)
 
 #get basic details
-optionsData = getPreparedResponse(session, "options user team")
-print(optionsData)
+
+teamInfo = eval(getPreparedResponse(session, "options user team"), {}, {})
 
 #output the results
+print("User {user} is folding for team {team}".format(user=teamInfo["user"], team=teamInfo["team"]))
 for slot in slots.values():
 	print(slot.__str__() + "\n")
 for queue in queues.values():
