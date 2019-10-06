@@ -45,8 +45,11 @@ def close():
 def enterCommand():
 	global session
 	cmd = input("Enter a command to be sent directly to FAH:\n")
-	result = session.getPreparedResponse(cmd)
-	print(result)
+	try:
+		result = session.getPreparedResponse(cmd)
+		print(result)
+	except Exception as err:
+		print("Error encountered. Message: {msg}".format(msg=err))
 
 counter = lambda c=count(): next(c) + 1
 menuItems = [
