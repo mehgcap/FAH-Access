@@ -25,7 +25,7 @@ def showSummary():
 		queue = Queue(queueData)
 		queues[queue.id] = queue
 		#add this queue to it's parent slot's list of queues
-		slotID = queue.slot
+		slotID = int(queue.slot)
 		slots[slotID].queues.append(queue)
 	
 	#get basic details

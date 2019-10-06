@@ -3,7 +3,8 @@ class Queue:
 	def __init__(self, rawData):
 		self._rawData = rawData
 		self.state = rawData["state"]
-		self.id = rawData["id"]
+		self.id = int(rawData["id"])
+		#we use the ["-1] to trim the percent sign this field includes
 		self.percentComplete = rawData["percentdone"][:-1]
 		self.slot = rawData["slot"]
 	

@@ -2,7 +2,7 @@ class Slot:
 
 	def __init__(self, rawData):
 		self._rawData = rawData
-		self.id = rawData["id"]
+		self.id = int(rawData["id"])
 		self.description = rawData["description"]
 		self.idle = rawData["idle"]
 		self.queues = []
